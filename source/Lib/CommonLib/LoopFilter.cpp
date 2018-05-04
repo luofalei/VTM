@@ -325,7 +325,9 @@ void LoopFilter::xSetEdgefilterMultiple( const CodingUnit&    cu,
 void LoopFilter::xSetLoopfilterParam( const CodingUnit& cu )
 {
   const Slice& slice = *cu.slice;
+#if HEVC_TILES_WPP
   const PPS&   pps   = *cu.cs->pps;
+#endif
 
   if( slice.getDeblockingFilterDisable() )
   {

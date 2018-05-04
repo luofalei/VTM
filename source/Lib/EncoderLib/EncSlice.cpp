@@ -1784,12 +1784,14 @@ Void EncSlice::calculateBoundingCtuTsAddrForSlice(UInt &startCtuTSAddrSlice, UIn
                                                    Picture* pcPic, const Int sliceMode, const Int sliceArgument)
 #endif
 {
-  Slice* pcSlice = pcPic->slices[getSliceSegmentIdx()];
 #if HEVC_TILES_WPP
+  Slice* pcSlice = pcPic->slices[getSliceSegmentIdx()];
   const TileMap& tileMap = *(pcPic->tileMap);
 #endif
   const UInt numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
+#if HEVC_TILES_WPP
   const PPS &pps=*(pcSlice->getPPS());
+#endif
   boundingCtuTSAddrSlice=0;
 #if HEVC_TILES_WPP
   haveReachedTileBoundary=false;
