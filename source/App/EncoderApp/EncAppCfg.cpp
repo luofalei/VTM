@@ -1842,6 +1842,7 @@ Bool EncAppCfg::xCheckParameter()
   }
 #endif
 
+
   xConfirmPara( m_useAMaxBT && !m_QTBT, "AMaxBT can only be used with QTBT!" );
 
 

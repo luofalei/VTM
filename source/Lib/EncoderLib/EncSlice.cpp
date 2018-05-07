@@ -798,15 +798,8 @@ static bool applyQPAdaptation (Picture* const pcPic, Slice* const pcSlice,    co
           iQPAdapt = max (0, iQPAdapt + 1 - int((3 * uAvgLuma * uAvgLuma) >> UInt64(2 * iBitDepth - 1)));
         }
 
+#endif
         const UInt     uRefScale  = g_invQuantScales[iQPAdapt % 6] << ((iQPAdapt / 6) + iBitDepth - (pcSlice->isIntra() ? 4 : 3));
-#else
-        const UInt     uRefScale  = g_invQuantScales[iQPAdapt % 6] << ((iQPAdapt / 6) + iBitDepth - 3);
-#endif
-#if HEVC_TILES_WPP
-        const UInt     ctuRsAddr  = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
-#else
-        const UInt     ctuRsAddr  = ctuTsAddr;
-#endif
         const CompArea subArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area ((ctuRsAddr % pcv.widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / pcv.widthInCtus) * pcv.maxCUHeight, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
         const Pel*     pSrc       = pcPic->getOrigBuf (subArea).buf;
         const SizeType iSrcStride = pcPic->getOrigBuf (subArea).stride;
@@ -1192,11 +1185,11 @@ Void EncSlice::compressSlice( Picture* pcPic, const Bool bCompressEntireSlice, c
   {
     for (UInt ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++)
     {
-#if HEVC_TILES_WPP
+ #if HEVC_TILES_WPP
       const UInt     ctuRsAddr  = tileMap.getCtuTsToRsAddrMap (ctuTsAddr);
-#else
+ #else
       const UInt     ctuRsAddr  = ctuTsAddr;
-#endif
+ #endif
       const Position pos ((ctuRsAddr % widthInCtus) * pcv.maxCUWidth, (ctuRsAddr / widthInCtus) * pcv.maxCUHeight);
       const CompArea subArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight)), pcPic->Y());
       const CompArea fltArea    = clipArea (CompArea (COMPONENT_Y, pcPic->chromaFormat, Area (pos.x > 0 ? pos.x - 1 : 0, pos.y > 0 ? pos.y - 1 : 0, pcv.maxCUWidth + (pos.x > 0 ? 2 : 1), pcv.maxCUHeight + (pos.y > 0 ? 2 : 1))), pcPic->Y());
@@ -1369,9 +1362,9 @@ void EncSlice::encodeCtus( Picture* pcPic, const Bool bCompressEntireSlice, cons
   for( UInt ctuTsAddr = startCtuTsAddr; ctuTsAddr < boundingCtuTsAddr; ctuTsAddr++ )
   {
 #if HEVC_TILES_WPP
-    const int  ctuRsAddr = tileMap.getCtuTsToRsAddrMap(ctuTsAddr);
+    const UInt ctuRsAddr = tileMap.getCtuTsToRsAddrMap(ctuTsAddr);
 #else
-    const int  ctuRsAddr = ctuTsAddr;
+    const UInt ctuRsAddr = ctuTsAddr;
 #endif
 
 #if HEVC_TILES_WPP
@@ -1381,7 +1374,7 @@ void EncSlice::encodeCtus( Picture* pcPic, const Bool bCompressEntireSlice, cons
 #endif
     const UInt ctuXPosInCtus        = ctuRsAddr % widthInCtus;
     const UInt ctuYPosInCtus        = ctuRsAddr / widthInCtus;
-    
+
     const Position pos (ctuXPosInCtus * pcv.maxCUWidth, ctuYPosInCtus * pcv.maxCUHeight);
     const UnitArea ctuArea( cs.area.chromaFormat, Area( pos.x, pos.y, pcv.maxCUWidth, pcv.maxCUHeight ) );
     DTRACE_UPDATE( g_trace_ctx, std::make_pair( "ctu", ctuRsAddr ) );
@@ -1680,7 +1673,6 @@ Void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, UI
     const UInt tileYPosInCtus       = firstCtuRsAddrOfTile / widthInCtus;
 #else
     const UInt ctuRsAddr            = ctuTsAddr;
-
 #endif
     const UInt ctuXPosInCtus        = ctuRsAddr % widthInCtus;
     const UInt ctuYPosInCtus        = ctuRsAddr / widthInCtus;
@@ -1737,7 +1729,7 @@ Void EncSlice::encodeSlice   ( Picture* pcPic, OutputBitstream* pcSubstreams, UI
          )
        )
 #else
-    if( ctuTsAddr + 1 == boundingCtuTsAddr)
+    if( ctuTsAddr + 1 == boundingCtuTsAddr )
 #endif
     {
       m_CABACWriter->end_of_slice();
@@ -1786,12 +1778,10 @@ Void EncSlice::calculateBoundingCtuTsAddrForSlice(UInt &startCtuTSAddrSlice, UIn
 {
 #if HEVC_TILES_WPP
   Slice* pcSlice = pcPic->slices[getSliceSegmentIdx()];
-  const TileMap& tileMap = *(pcPic->tileMap);
+  const TileMap& tileMap = *( pcPic->tileMap );
+  const PPS &pps         = *( pcSlice->getPPS() );
 #endif
   const UInt numberOfCtusInFrame = pcPic->cs->pcv->sizeInCtus;
-#if HEVC_TILES_WPP
-  const PPS &pps=*(pcSlice->getPPS());
-#endif
   boundingCtuTSAddrSlice=0;
 #if HEVC_TILES_WPP
   haveReachedTileBoundary=false;
