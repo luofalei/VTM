@@ -758,6 +758,20 @@ void PU::getInterMergeCandidates( const PredictionUnit &pu, MergeCtx& mrgCtx, co
 
     if( dir != 0 )
     {
+      bool addTMvp = true;
+#if HM_JEM_MERGE_CANDS
+      int iSpanCand = cnt;
+      for (int i = 0; i < iSpanCand; i++)
+      {
+        if (mrgCtx.interDirNeighbours[i] == dir &&
+          mrgCtx.mvFieldNeighbours[i << 1] == mrgCtx.mvFieldNeighbours[uiArrayAddr << 1] &&
+          mrgCtx.mvFieldNeighbours[(i << 1) + 1] == mrgCtx.mvFieldNeighbours[(uiArrayAddr << 1) + 1])
+        {
+          addTMvp = false;
+        }
+      }
+#endif
+      if (addTMvp)
       {
         mrgCtx.interDirNeighbours[uiArrayAddr] = dir;
         isCandInter              [uiArrayAddr] = true;
