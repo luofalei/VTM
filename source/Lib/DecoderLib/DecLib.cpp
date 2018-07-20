@@ -78,7 +78,11 @@ bool tryDecodePicture( Picture* pcEncPic, const int expectedPoc, const std::stri
       pcDecLib->create();
 
       // initialize decoder class
-      pcDecLib->init();
+      pcDecLib->init(
+#if  JVET_J0090_MEMORY_BANDWITH_MEASURE
+        ""
+#endif
+      );
 
       pcDecLib->setDecodedPictureHashSEIEnabled( true );
 
@@ -327,6 +331,9 @@ DecLib::DecLib()
   , m_seiReader()
   , m_cLoopFilter()
   , m_cSAO()
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  , m_cacheModel()
+#endif
   , m_pcPic(NULL)
   , m_prevPOC(MAX_INT)
   , m_prevTid0POC(0)
@@ -372,9 +379,18 @@ Void DecLib::destroy()
   m_cSliceDecoder.destroy();
 }
 
-Void DecLib::init()
+void DecLib::init(
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  const std::string& cacheCfgFileName 
+#endif
+)
 {
   m_cSliceDecoder.init( &m_CABACDecoder, &m_cCuDecoder );
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  m_cacheModel.create( cacheCfgFileName );
+  m_cacheModel.clear( );
+  m_cInterPred.cacheAssign( &m_cacheModel );
+#endif
   DTRACE_UPDATE( g_trace_ctx, std::make_pair( "final", 1 ) );
 }
 
@@ -393,6 +409,10 @@ Void DecLib::deletePicBuffer ( )
   }
   m_cSAO.destroy();
   m_cLoopFilter.destroy();
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  m_cacheModel.reportSequence( );
+  m_cacheModel.destroy( );
+#endif
 }
 
 Picture* DecLib::xGetNewPicBuffer ( const SPS &sps, const PPS &pps, const UInt temporalLayer )
@@ -1125,6 +1145,7 @@ Void DecLib::xDecodePPS( InputNALUnit& nalu )
 
 Bool DecLib::decode(InputNALUnit& nalu, Int& iSkipFrame, Int& iPOCLastDisplay)
 {
+  bool ret;
   // ignore all NAL units of layers > 0
   if (nalu.m_nuhLayerId > 0)
   {
@@ -1180,8 +1201,16 @@ Bool DecLib::decode(InputNALUnit& nalu, Int& iSkipFrame, Int& iPOCLastDisplay)
     case NAL_UNIT_CODED_SLICE_RADL_R:
     case NAL_UNIT_CODED_SLICE_RASL_N:
     case NAL_UNIT_CODED_SLICE_RASL_R:
-      return xDecodeSlice(nalu, iSkipFrame, iPOCLastDisplay);
-      break;
+      ret = xDecodeSlice(nalu, iSkipFrame, iPOCLastDisplay);
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+      if ( ret )
+      {
+        m_cacheModel.reportFrame( );
+        m_cacheModel.accumulateFrame( );
+        m_cacheModel.clear( );
+      }
+#endif
+      return ret;
 
     case NAL_UNIT_EOS:
       m_associatedIRAPType = NAL_UNIT_INVALID;

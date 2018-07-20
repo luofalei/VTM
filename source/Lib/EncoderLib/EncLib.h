@@ -124,6 +124,9 @@ private:
   int                       m_numCuEncStacks;
 #endif
 
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  CacheModel                m_cacheModel;
+#endif
 
 public:
   Ctx                       m_entropyCodingSyncContextState;      ///< leave in addition to vector for compatibility

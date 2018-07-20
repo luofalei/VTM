@@ -83,6 +83,9 @@ protected:
 
   Int                  m_iRefListIdx;
   
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  CacheModel*          m_cacheModel;
+#endif
 
   Void xPredInterUni            ( const PredictionUnit& pu, const RefPicList& eRefPicList, PelUnitBuf& pcYuvPred, const Bool& bi );
   Void xPredInterBi             ( PredictionUnit& pu, PelUnitBuf &pcYuvPred );
@@ -108,6 +111,9 @@ public:
   Void    motionCompensation  (PredictionUnit &pu, const RefPicList &eRefPicList = REF_PIC_LIST_X);
   Void    motionCompensation  (CodingUnit &cu,     const RefPicList &eRefPicList = REF_PIC_LIST_X);
 
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+  void    cacheAssign( CacheModel *cache );
+#endif
 
 };
 

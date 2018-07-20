@@ -152,6 +152,9 @@ Void InterPrediction::init( RdCost* pcRdCost, ChromaFormat chromaFormatIDC )
     
   }
 
+#if !JVET_J0090_MEMORY_BANDWITH_MEASURE
+  m_if.initInterpolationFilter( true );
+#endif
 }
 
 Bool checkIdenticalMotion( const PredictionUnit &pu )
@@ -300,6 +303,7 @@ Void InterPrediction::xPredInterBi(PredictionUnit& pu, PelUnitBuf &pcYuvPred)
 Void InterPrediction::xPredInterBlk ( const ComponentID& compID, const PredictionUnit& pu, const Picture* refPic, const Mv& _mv, PelUnitBuf& dstPic, const Bool& bi, const ClpRng& clpRng
                                     )
 {
+  JVET_J0090_SET_REF_PICTURE( refPic, compID );
   const ChromaFormat  chFmt  = pu.chromaFormat;
   const bool          rndRes = !bi;
 
@@ -334,7 +338,9 @@ Void InterPrediction::xPredInterBlk ( const ComponentID& compID, const Predictio
 
     Int vFilterSize = isLuma(compID) ? NTAPS_LUMA : NTAPS_CHROMA;
     m_if.filterHor(compID, (Pel*) refBuf.buf - ((vFilterSize >> 1) - 1) * refBuf.stride, refBuf.stride, tmpBuf.buf, tmpBuf.stride, width, height + vFilterSize - 1, xFrac, false,         chFmt, clpRng);
+    JVET_J0090_SET_CACHE_ENABLE( false );
     m_if.filterVer(compID, (Pel*) tmpBuf.buf + ((vFilterSize >> 1) - 1) * tmpBuf.stride, tmpBuf.stride, dstBuf.buf, dstBuf.stride, width, height,                   yFrac, false, rndRes, chFmt, clpRng);
+    JVET_J0090_SET_CACHE_ENABLE( true );
   }
 
 }
@@ -427,5 +433,13 @@ Void InterPrediction::motionCompensation( PredictionUnit &pu, const RefPicList &
 
 
 
+#if JVET_J0090_MEMORY_BANDWITH_MEASURE
+void InterPrediction::cacheAssign( CacheModel *cache )
+{
+  m_cacheModel = cache;
+  m_if.cacheAssign( cache );
+  m_if.initInterpolationFilter( !cache->isCacheEnable() );
+}
+#endif
 
 //! \}
